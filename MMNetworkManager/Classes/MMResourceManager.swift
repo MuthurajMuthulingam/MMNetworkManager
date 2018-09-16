@@ -74,7 +74,7 @@ public class MMResourceManager : LogOperation, ProgressReportRules {
         session.downloadTask(with: resource.url).resume()
     }
     
-    private func resultResource(WithData data:Data?, oldResource:Resource, error: Error?) -> Resource {
+    public func resultResource(WithData data:Data?, oldResource:Resource, error: Error?) -> Resource {
         var newResource = oldResource
         newResource.rawData = data
         if oldResource.type == .image, let unwrappedData = data {

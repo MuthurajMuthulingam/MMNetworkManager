@@ -28,10 +28,10 @@ public class MMNetworkManager {
     public var enableLogging: Bool = false // default
     
     // Private request operation Queue
-    private lazy var requestsQueue = OperationQueue()
+    public lazy var requestsQueue = OperationQueue()
     
     // Private resource request operation queue
-    private lazy var resourceRequestsQueue = OperationQueue()
+    public lazy var resourceRequestsQueue = OperationQueue()
     
     // Notification to Network Changes
     public var networkStatusChanged:NetworkStatusBlock?

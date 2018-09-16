@@ -51,7 +51,7 @@ public class MMReachability  {
             isRunningOnDevice     ? .wwan : .unreachable
     }
     var isRunningOnDevice: Bool = {
-        #if os(simulator)
+        #if (arch(i386) || arch(x86_64)) && os(iOS)
             return false
         #else
             return true
