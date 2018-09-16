@@ -9,7 +9,7 @@
 Pod::Spec.new do |s|
   s.name             = 'MMNetworkManager'
   s.version          = '0.0.1'
-  s.summary          = 'A short description of MMNetworkManager.'
+  s.summary          = 'Network layer of typical iOS application'
 
 # This description is used to generate tags and improve search results.
 #   * Think: What does it do? Why did you write it? What is the focus?
@@ -17,15 +17,13 @@ Pod::Spec.new do |s|
 #   * Write the description between the DESC delimiters below.
 #   * Finally, don't worry about the indent, CocoaPods strips it!
 
-  s.description      = <<-DESC
-TODO: Add long description of the pod here.
-                       DESC
+  s.description      = 'One stop to get all network related tasks, typically act as a network layer of iOS application'
 
-  s.homepage         = 'https://github.com/Muthuraj Muthulingam/MMNetworkManager'
+  s.homepage         = 'https://github.com/MuthurajMuthulingam/MMNetworkManager'
   # s.screenshots     = 'www.example.com/screenshots_1', 'www.example.com/screenshots_2'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'Muthuraj Muthulingam' => 'muthurajmuthulingam@gmail.com' }
-  s.source           = { :git => 'https://github.com/Muthuraj Muthulingam/MMNetworkManager.git', :tag => s.version.to_s }
+  s.source           = { :git => 'https://github.com/MuthurajMuthulingam/MMNetworkManager.git', :tag => s.version.to_s }
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
   s.ios.deployment_target = '8.0'
