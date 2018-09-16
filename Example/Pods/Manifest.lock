@@ -1,0 +1,16 @@
+PODS:
+  - MMNetworkManager (0.1.0)
+
+DEPENDENCIES:
+  - MMNetworkManager (from `../`)
+
+EXTERNAL SOURCES:
+  MMNetworkManager:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  MMNetworkManager: 31849789106450147eec9226d3d891703671af41
+
+PODFILE CHECKSUM: 862a47a34325025feaa59053e59df5d05bab9cc3
+
+COCOAPODS: 1.6.0.beta.1
