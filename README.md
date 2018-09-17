@@ -5,9 +5,6 @@
 [![License](https://img.shields.io/cocoapods/l/MMNetworkManager.svg?style=flat)](https://cocoapods.org/pods/MMNetworkManager)
 [![Platform](https://img.shields.io/cocoapods/p/MMNetworkManager.svg?style=flat)](https://cocoapods.org/pods/MMNetworkManager)
 
-# NetworkManager
-Handles a Network related operations
-
 # Purpose
  -  Provides three sub modules
  -  Network Resource Helper
@@ -25,7 +22,7 @@ Handles a Network related operations
       - Supports multiple requests on the go
 
 # Usage
- -  Demo project attached
+ -  Please refer a demo project attached
 
 ## Installation
 
