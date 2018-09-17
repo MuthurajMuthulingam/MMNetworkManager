@@ -5,11 +5,27 @@
 [![License](https://img.shields.io/cocoapods/l/MMNetworkManager.svg?style=flat)](https://cocoapods.org/pods/MMNetworkManager)
 [![Platform](https://img.shields.io/cocoapods/p/MMNetworkManager.svg?style=flat)](https://cocoapods.org/pods/MMNetworkManager)
 
-## Example
+# NetworkManager
+Handles a Network related operations
 
-To run the example project, clone the repo, and run `pod install` from the Example directory first.
+# Purpose
+ -  Provides three sub modules
+ -  Network Resource Helper
+      - Supports resources including Image,PDF,Word
+      - Caches the loaded data and return it on the go
+      - Asynchrounous execution of resource request
+      - Progress reporting
+      - Downloading/Uploading of resources
+ -   Network Request Helper
+      - Simple network data requests
+      - Supports response formats including JSON,XML
+      - Asynchrounous requests handling
+ -  Network Manager
+      - Manages data and resource requests
+      - Supports multiple requests on the go
 
-## Requirements
+# Usage
+ -  Demo project attached
 
 ## Installation
 
