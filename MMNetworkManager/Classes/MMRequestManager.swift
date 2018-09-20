@@ -8,60 +8,67 @@
 
 import UIKit
 
-public protocol LoggingRules {
+public typealias MMResponseHandler = ((_ response:MMResponse,_ request: MMRequest) -> Void)
+
+public protocol MMLoggingRules {
     var enableLogging: Bool { get set }
 }
 
-public protocol NetworkRules {
+public protocol MMNetworkRules {
     var url:URL { get set }
 }
 
-public protocol NetworkResponseRules {
+public protocol MMRequestRules: MMNetworkRules {
+    var parameters:[String:Any]? { get set }
+    var method:MMRequestMethod { get set }
+    var responseType:Type { get set }
+    var timeout:Double { get set }
+    var headers:[String:String]? { get set }
+}
+
+public protocol MMNetworkResponseRules {
     var rawData: Data? { get set }
     var error: Error? { get set }
 }
 
-public protocol ResponseRules: NetworkResponseRules {
+public protocol MMResponseRules: MMNetworkResponseRules {
     var rawData:Data? { get set }
-    var formattedData:AnyObject? {get set}
-    var type:Type {get set}
+    var formattedData:AnyObject? { get set }
+    var type:Type { get set }
     
 }
 
-public enum RequestMethod:String {
+public enum MMRequestMethod:String {
     case get    = "GET"
     case post   = "POST"
     case put    = "PUT"
     case delete = "DELETE"
 }
 
-public struct Request:NetworkRules {
+public struct MMRequest:MMNetworkRules {
     public var url:URL
     var parameters:[String:Any]?
-    var method:RequestMethod
+    var method:MMRequestMethod
     var responseType:Type
     var timeout:Double = 60 // default
-    var hasHeader:Bool = false
     var headers:[String:String]?
     
     public init(from url:URL,
                 params:[String:Any]?,
-                method:RequestMethod,
+                method:MMRequestMethod,
                 responseType:Type,
                 timeout:Double,
-                hasHeader:Bool,
                 headers:[String:String]?) {
         self.url = url
         self.parameters = params
         self.method = method
         self.responseType = responseType
         self.timeout = timeout
-        self.hasHeader = hasHeader
         self.headers = headers
     }
 }
 
-public struct Response:ResponseRules {
+public struct MMResponse:MMResponseRules {
     public var error: Error?
     public var rawData:Data?
     public var formattedData:AnyObject?
@@ -82,13 +89,13 @@ public struct Response:ResponseRules {
  * executes network calls in different thread asynchrounouesly
  * handles multiple request and process it in parallel way
  */
-public class MMRequestManager: LogOperation {
-    private let request:Request
+public class MMRequestManager: MMLogOperation {
+    private let request:MMRequest
     // completion Handler
-    public var completionHandler:((_ response:Response) -> Void)?
+    public var completionHandler: MMResponseHandler?
     
     // designated initializer
-    public init(withRequest request:Request, LogEnabled: Bool = true) {
+    public init(withRequest request:MMRequest, LogEnabled: Bool = true) {
         self.request = request
         super.init(with: LogEnabled)
         queuePriority = .high
@@ -141,22 +148,22 @@ public class MMRequestManager: LogOperation {
     private func execute() {
         let session = URLSession(configuration: .ephemeral)
         session.dataTask(with: frameRequest()) {(data, response, error) in
-            var response = Response(rawData: nil, formattedData: nil, type: self.request.responseType, error: error)
+            var response = MMResponse(rawData: nil, formattedData: nil, type: self.request.responseType, error: error)
             guard let dataInfo = data else {
-                self.completionHandler?(response)
+                self.completionHandler?(response, self.request)
                 return }
             response.rawData = dataInfo
             if self.request.responseType == .json {
                 do {
                     let jsonObject = try JSONSerialization.jsonObject(with: dataInfo, options: .mutableContainers) as AnyObject
                     response.formattedData = jsonObject
-                    self.completionHandler?(response)
+                    self.completionHandler?(response, self.request)
                 } catch let error {
                     response.error = error
-                    self.completionHandler?(response)
+                    self.completionHandler?(response, self.request)
                 }
             } else { // other response types
-                self.completionHandler?(response)
+                self.completionHandler?(response, self.request)
             }
             }.resume()
     }
@@ -187,7 +194,7 @@ extension MMRequestManager : URLSessionDelegate {
 }
 
 // Custom class to enable logging
-public class LogOperation: Operation, LoggingRules {
+public class MMLogOperation: Operation, MMLoggingRules {
     public var enableLogging: Bool
     
     init(with enableLogging: Bool) {

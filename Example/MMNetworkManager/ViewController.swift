@@ -33,8 +33,8 @@ class ViewController: UIViewController {
     
     private func loadDataFromServer() {
         guard let url = URL(string: kURLString) else { return }
-        let request = Request(from: url, params: nil, method: .get, responseType: .json, timeout: 30, hasHeader: false, headers: nil)
-        MMNetworkManager.shared.perform(Request: request) { response in
+        let request = MMRequest(from: url, params: nil, method: .get, responseType: .json, timeout: 30, headers: nil)
+        MMNetworkManager.shared.perform(Request: request) { response, request in
             debugPrint("URL Response : \(response) and Error : \(String(describing: response.error))")
         }
     }

@@ -8,7 +8,7 @@
 
 import UIKit
 
-public struct Resource:NetworkRules, ResponseRules {
+public struct MMNetworkResource:MMNetworkRules, MMResponseRules {
     public var error: Error?
     public var rawData:Data?
     public var formattedData:AnyObject?
@@ -42,14 +42,14 @@ public enum ResourceOperationType {
   * Uses NSCache to store resource in memory, not in disk
   * Have higher limits in resource counts
  */
-public class MMResourceManager : LogOperation, ProgressReportRules {
+public class MMResourceManager : MMLogOperation, ProgressReportRules {
     
     public var needsProgressReport: Bool
-    fileprivate let resource:Resource
+    fileprivate let resource:MMNetworkResource
     fileprivate let resourceOperation:ResourceOperationType
     
     // Designated initializer
-    public init(with resource:Resource,toPerform operation:ResourceOperationType, enableLogging: Bool = true, needsProgressReport: Bool = false) {
+    public init(with resource:MMNetworkResource,toPerform operation:ResourceOperationType, enableLogging: Bool = true, needsProgressReport: Bool = false) {
         self.resource = resource
         self.resourceOperation = operation
         self.needsProgressReport = needsProgressReport
@@ -61,7 +61,7 @@ public class MMResourceManager : LogOperation, ProgressReportRules {
     // result block
     public var completionHandler:ResourceCompletionBlock?
     // progress indicator
-    public var progress:((_ networkResourceHelper:MMResourceManager, _ progress:CGFloat, _ resource:Resource)->Void)?
+    public var progress:((_ networkResourceHelper:MMResourceManager, _ progress:CGFloat, _ resource:MMNetworkResource)->Void)?
     
     /// request resource over network
     ///
@@ -74,7 +74,7 @@ public class MMResourceManager : LogOperation, ProgressReportRules {
         session.downloadTask(with: resource.url).resume()
     }
     
-    public func resultResource(WithData data:Data?, oldResource:Resource, error: Error?) -> Resource {
+    public func resultResource(WithData data:Data?, oldResource:MMNetworkResource, error: Error?) -> MMNetworkResource {
         var newResource = oldResource
         newResource.rawData = data
         if oldResource.type == .image, let unwrappedData = data {
@@ -159,14 +159,14 @@ public protocol NetworkCallHelper {
     func execute(completion: T)
 }
 
-extension Request: NetworkCallHelper {
-    public typealias T = RequestCompletionBlock
-    public func execute(completion: @escaping RequestCompletionBlock) {
+extension MMRequest: NetworkCallHelper {
+    public typealias T = MMResponseHandler
+    public func execute(completion: @escaping MMResponseHandler) {
         MMNetworkManager.shared.perform(Request: self, CompletionHandler: completion)
     }
 }
 
-extension Resource: NetworkCallHelper {
+extension MMNetworkResource: NetworkCallHelper {
     public typealias T = ResourceCompletionBlock
     public func execute(completion: @escaping ResourceCompletionBlock) {
         MMNetworkManager.shared.getRemote(Resource: self, needsProgressReporting: true, completion: completion)
@@ -174,7 +174,7 @@ extension Resource: NetworkCallHelper {
 }
 
 public protocol ProgressReportRules {
-    var progress:((_ networkResourceHelper:MMResourceManager, _ progress:CGFloat, _ resource:Resource)->Void)? { get }
+    var progress:((_ networkResourceHelper:MMResourceManager, _ progress:CGFloat, _ resource:MMNetworkResource)->Void)? { get }
     var needsProgressReport: Bool { get set }
 }
 
@@ -182,7 +182,7 @@ public protocol ProgressReportRules {
 extension UIImageView {
     public func mm_setImage(from url: URL) {
         // create a image resource
-        let imageResource = Resource(rawData: nil, formattedData: nil, type: .image, url: url, error: nil)
+        let imageResource = MMNetworkResource(rawData: nil, formattedData: nil, type: .image, url: url, error: nil)
         imageResource.execute { resultResource in
             if let imageData = resultResource.formattedData as? UIImage, // Image data
                 url == resultResource.url { // both url remains same

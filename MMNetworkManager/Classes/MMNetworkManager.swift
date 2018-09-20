@@ -8,9 +8,8 @@
 
 import UIKit
 
-public typealias RequestCompletionBlock = ((_ response:Response) -> Void)
-public typealias ResourceCompletionBlock = ((_ resource:Resource) -> Void)
-public typealias NetworkStatusBlock = ((_ NetworkManage:MMNetworkManager, _ isNetworkReachable:Bool) -> Void)
+public typealias ResourceCompletionBlock = ((_ resource:MMNetworkResource) -> Void)
+public typealias NetworkStatusBlock = ((_ NetworkManager:MMNetworkManager, _ isNetworkReachable:Bool) -> Void)
 
 public class MMNetworkManager {
     
@@ -40,7 +39,7 @@ public class MMNetworkManager {
     lazy var reachablity:MMReachability? = try! MMReachability(hostname: "Reachablity")
     
     //MARK: - Public Helpers
-    public func perform(Request request:Request,CompletionHandler completion:@escaping RequestCompletionBlock) {
+    public func perform(Request request:MMRequest,CompletionHandler completion:@escaping MMResponseHandler) {
         let requestHelper = MMRequestManager(withRequest: request)
         requestHelper.completionHandler = completion
         requestsQueue.addOperation(requestHelper)
@@ -51,7 +50,7 @@ public class MMNetworkManager {
     /// - Parameters:
     ///   - resource: resource information
     ///   - completion: completion handler will return on secondary thread
-    public func getRemote(Resource resource:Resource, needsProgressReporting progressReport: Bool, completion:@escaping ResourceCompletionBlock) {
+    public func getRemote(Resource resource:MMNetworkResource, needsProgressReporting progressReport: Bool, completion:@escaping ResourceCompletionBlock) {
         let resourceHelper = MMResourceManager(with: resource, toPerform: .download)
         resourceHelper.completionHandler = completion
         resourceRequestsQueue.addOperation(resourceHelper)

@@ -89,6 +89,7 @@ public class MMResourceCache {
             break
         case .memoryOrDisk:
             // store it to cache directory
+            status = storeData(toCacheDirectory: data as NSData, for: key)
             break
         }
         return status
