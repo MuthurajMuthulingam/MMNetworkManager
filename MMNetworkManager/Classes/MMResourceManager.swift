@@ -42,7 +42,7 @@ public enum ResourceOperationType {
   * Uses NSCache to store resource in memory, not in disk
   * Have higher limits in resource counts
  */
-public class MMResourceManager : MMLogOperation, ProgressReportRules {
+public class MMResourceManager : MMLogOperation, ProgressReportRules, @unchecked Sendable {
     
     public var needsProgressReport: Bool
     fileprivate let resource:MMNetworkResource

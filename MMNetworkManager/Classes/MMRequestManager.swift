@@ -89,7 +89,7 @@ public struct MMResponse:MMResponseRules {
  * executes network calls in different thread asynchrounouesly
  * handles multiple request and process it in parallel way
  */
-public class MMRequestManager: MMLogOperation {
+public class MMRequestManager: MMLogOperation, @unchecked Sendable {
     private let request:MMRequest
     // completion Handler
     public var completionHandler: MMResponseHandler?
@@ -120,7 +120,7 @@ public class MMRequestManager: MMLogOperation {
         }
         // set method
         finalRequest.httpMethod = request.method.rawValue
-        // log request if needed
+        // log request if logging enabled
         if enableLogging {
             print("====================================================")
             print("Detailed URL Request")
@@ -177,7 +177,7 @@ public class MMRequestManager: MMLogOperation {
 
 // MARK: - Dictionary Extentions
 public extension Dictionary {
-    public func getJSONData() -> Data? {
+    func getJSONData() -> Data? {
         do {
             return try JSONSerialization.data(withJSONObject: self, options: .prettyPrinted)
         } catch _ {
@@ -194,7 +194,7 @@ extension MMRequestManager : URLSessionDelegate {
 }
 
 // Custom class to enable logging
-public class MMLogOperation: Operation, MMLoggingRules {
+public class MMLogOperation: Operation, MMLoggingRules, @unchecked Sendable {
     public var enableLogging: Bool
     
     init(with enableLogging: Bool) {
