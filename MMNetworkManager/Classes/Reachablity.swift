@@ -24,6 +24,7 @@ public class MMReachability  {
     var reachability: SCNetworkReachability?
     var reachabilityFlags = SCNetworkReachabilityFlags()
     let reachabilitySerialQueue = DispatchQueue(label: "ReachabilityQueue")
+
     init?(hostname: String) throws {
         guard let reachability = SCNetworkReachabilityCreateWithName(nil, hostname) else {
             throw Network.Error.failedToCreateWith(hostname)
@@ -32,6 +33,7 @@ public class MMReachability  {
         self.hostname = hostname
         isReachableOnWWAN = true
     }
+
     init?() throws {
         var zeroAddress = sockaddr_in()
         zeroAddress.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
@@ -45,11 +47,13 @@ public class MMReachability  {
         self.reachability = reachability
         isReachableOnWWAN = true
     }
+
     var status: Network.Status {
         return  !isConnectedToNetwork ? .unreachable :
             isReachableViaWiFi    ? .wifi :
             isRunningOnDevice     ? .wwan : .unreachable
     }
+
     var isRunningOnDevice: Bool = {
         #if targetEnvironment(simulator)
             return false
@@ -57,12 +61,16 @@ public class MMReachability  {
             return true
         #endif
     }()
+
     deinit { stop() }
 }
 
 extension MMReachability: MMReachablityRules {
+
     public func start() throws {
-        guard let reachability = reachability, !isRunning else { return }
+        guard let reachability,
+              !isRunning else { return }
+
         var context = SCNetworkReachabilityContext(version: 0, info: nil, retain: nil, release: nil, copyDescription: nil)
         context.info = Unmanaged<MMReachability>.passUnretained(self).toOpaque()
         guard SCNetworkReachabilitySetCallback(reachability, callout, &context) else { stop()
@@ -71,23 +79,26 @@ extension MMReachability: MMReachablityRules {
         guard SCNetworkReachabilitySetDispatchQueue(reachability, reachabilitySerialQueue) else { stop()
             throw Network.Error.failedToSetDispatchQueue
         }
-        reachabilitySerialQueue.async { self.flagsChanged() }
+        reachabilitySerialQueue.async { self.networkStatusChanges() }
         isRunning = true
     }
+
     public func stop() {
         defer { isRunning = false }
-        guard let reachability = reachability else { return }
+        guard let reachability else { return }
         SCNetworkReachabilitySetCallback(reachability, nil, nil)
         SCNetworkReachabilitySetDispatchQueue(reachability, nil)
         self.reachability = nil
     }
+
     public var isConnectedToNetwork: Bool {
-        return isReachable &&
-            !isConnectionRequiredAndTransientConnection &&
-            !(isRunningOnDevice && isWWAN && !isReachableOnWWAN)
+        isReachable &&
+        !isConnectionRequiredAndTransientConnection &&
+        !(isRunningOnDevice && isWWAN && !isReachableOnWWAN)
     }
+
     public var isReachableViaWiFi: Bool {
-        return isReachable && isRunningOnDevice && !isWWAN
+        isReachable && isRunningOnDevice && !isWWAN
     }
     
     /// Flags that indicate the reachability of a network node name or address, including whether a connection is required, and whether some user intervention might be required when establishing a connection.
@@ -100,10 +111,11 @@ extension MMReachability: MMReachablityRules {
     }
     
     /// compares the current flags with the previous flags and if changed posts a flagsChanged notification
-    func flagsChanged() {
-        guard let flags = flags, flags != reachabilityFlags else { return }
+    func networkStatusChanges() {
+        guard let flags = flags,
+              flags != reachabilityFlags else { return }
         reachabilityFlags = flags
-        NotificationCenter.default.post(name: .flagsChanged, object: self)
+        NotificationCenter.default.post(name: .networkStatusChanged, object: self)
     }
     
     /// The specified node name or address can be reached via a transient connection, such as PPP.
@@ -141,14 +153,15 @@ extension MMReachability: MMReachablityRules {
 }
 
 func callout(reachability: SCNetworkReachability, flags: SCNetworkReachabilityFlags, info: UnsafeMutableRawPointer?) {
-    guard let info = info else { return }
+    guard let info else { return }
+
     DispatchQueue.main.async {
-        Unmanaged<MMReachability>.fromOpaque(info).takeUnretainedValue().flagsChanged()
+        Unmanaged<MMReachability>.fromOpaque(info).takeUnretainedValue().networkStatusChanges()
     }
 }
 
 extension Notification.Name {
-    static let flagsChanged = Notification.Name("FlagsChanged")
+    static let networkStatusChanged = Notification.Name("networkStatusChanged")
 }
 
 struct Network {
