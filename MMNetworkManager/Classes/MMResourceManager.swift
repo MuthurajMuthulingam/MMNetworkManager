@@ -169,7 +169,7 @@ extension MMRequest: NetworkCallHelper {
 extension MMNetworkResource: NetworkCallHelper {
     public typealias T = ResourceCompletionBlock
     public func execute(completion: @escaping ResourceCompletionBlock) {
-        MMNetworkManager.shared.getRemote(Resource: self, needsProgressReporting: true, completion: completion)
+        MMNetworkManager.shared.getRemoteResource(self, needsProgressReporting: true, completion: completion)
     }
 }
 

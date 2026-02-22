@@ -8,16 +8,16 @@
 
 import UIKit
 
-public typealias ResourceCompletionBlock = ((_ resource:MMNetworkResource) -> Void)
-public typealias NetworkStatusBlock = ((_ NetworkManager:MMNetworkManager, _ isNetworkReachable:Bool) -> Void)
+public typealias ResourceCompletionBlock = ((_ resource: MMNetworkResource) -> Void)
+public typealias NetworkStatusBlock = ((_ NetworkManager: MMNetworkManager, _ isNetworkReachable:Bool) -> Void)
 
 public class MMNetworkManager {
     
     // shared instance
-    public static let shared:MMNetworkManager = MMNetworkManager()
-    
+    public static let shared: MMNetworkManager = MMNetworkManager()
+
     // Reachablity
-    public var isNetworkReachable:Bool {
+    public var isNetworkReachable: Bool {
         get {
             return (reachablity == nil) ? false : (reachablity?.isReachable)!
         }
@@ -33,11 +33,11 @@ public class MMNetworkManager {
     public lazy var resourceRequestsQueue = OperationQueue()
     
     // Notification to Network Changes
-    public var networkStatusChanged:NetworkStatusBlock?
-    
-    //rechablity instance
-    lazy var reachablity:MMReachability? = try! MMReachability(hostname: "Reachablity")
-    
+    public var networkStatusChanged: NetworkStatusBlock?
+
+    //reachability instance
+    lazy var reachablity: MMReachability? = try! MMReachability(hostname: "Reachablity")
+
     //MARK: - Public Helpers
     public func perform(Request request:MMRequest,CompletionHandler completion:@escaping MMResponseHandler) {
         let requestHelper = MMRequestManager(withRequest: request)
@@ -50,7 +50,9 @@ public class MMNetworkManager {
     /// - Parameters:
     ///   - resource: resource information
     ///   - completion: completion handler will return on secondary thread
-    public func getRemote(Resource resource:MMNetworkResource, needsProgressReporting progressReport: Bool, completion:@escaping ResourceCompletionBlock) {
+    public func getRemoteResource(_ resource:MMNetworkResource,
+                                  needsProgressReporting progressReport: Bool,
+                                  completion:@escaping ResourceCompletionBlock) {
         let resourceHelper = MMResourceManager(with: resource, toPerform: .download)
         resourceHelper.completionHandler = completion
         resourceRequestsQueue.addOperation(resourceHelper)
@@ -64,11 +66,11 @@ public class MMNetworkManager {
 // Computed Properties
 extension MMNetworkManager {
     public var requestsCount:Int {
-        return requestsQueue.operationCount
+        requestsQueue.operationCount
     }
     
     public var resourceRequestCount:Int {
-        return resourceRequestsQueue.operationCount
+        resourceRequestsQueue.operationCount
     }
 }
 
@@ -77,7 +79,7 @@ extension MMNetworkManager {
     public func startNetworkStatusMonitoring() {
         do {
             try reachablity?.start()
-            observeForFlagChanges()
+            observeNetworkStatusChanges()
         } catch let error {
             debugPrint("Error while start monitoring. \(error.localizedDescription)")
         }
@@ -87,8 +89,8 @@ extension MMNetworkManager {
         reachablity?.stop()
     }
     
-    public func observeForFlagChanges() {
-        NotificationCenter.default.addObserver(self, selector: #selector(handleNotification(notification:)), name: .flagsChanged, object: nil)
+    public func observeNetworkStatusChanges() {
+        NotificationCenter.default.addObserver(self, selector: #selector(handleNotification(notification:)), name: .networkStatusChanged, object: nil)
     }
     
     @objc
