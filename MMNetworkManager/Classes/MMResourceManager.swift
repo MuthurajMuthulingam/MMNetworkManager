@@ -8,16 +8,14 @@
 
 import UIKit
 
-public struct MMNetworkResource:MMNetworkRules, MMResponseRules {
+public struct MMNetworkResource: MMNetworkRules, MMResponseRules, Sendable {
     public var error: Error?
-    public var rawData:Data?
-    public var formattedData:AnyObject?
-    public var type:Type
-    public var url:URL
+    public var rawData: Data?
+    public var type: Type
+    public var url: URL
     
-    public init(rawData:Data?,formattedData:AnyObject? , type:Type, url:URL, error: Error?) {
+    public init(rawData: Data?, type: Type, url: URL, error: Error?) {
         self.rawData = rawData
-        self.formattedData = formattedData
         self.type = type
         self.url = url
         self.error = error
@@ -42,9 +40,9 @@ public enum ResourceOperationType {
   * Uses NSCache to store resource in memory, not in disk
   * Have higher limits in resource counts
  */
-public class MMResourceManager : MMLogOperation, ProgressReportRules, @unchecked Sendable {
+final class MMResourceManager : MMLogOperation {
     
-    public var needsProgressReport: Bool
+    var needsProgressReport: Bool
     fileprivate let resource:MMNetworkResource
     fileprivate let resourceOperation:ResourceOperationType
     
@@ -59,9 +57,9 @@ public class MMResourceManager : MMLogOperation, ProgressReportRules, @unchecked
     }
     
     // result block
-    public var completionHandler:ResourceCompletionBlock?
+    var completionHandler: ((MMNetworkResource) -> Void)?
     // progress indicator
-    public var progress:((_ networkResourceHelper:MMResourceManager, _ progress:CGFloat, _ resource:MMNetworkResource)->Void)?
+    var progress: ((_ networkResourceHelper: MMResourceManager, _ progress: CGFloat, _ resource: MMNetworkResource)->Void)?
     
     /// request resource over network
     ///
@@ -77,9 +75,6 @@ public class MMResourceManager : MMLogOperation, ProgressReportRules, @unchecked
     public func resultResource(WithData data:Data?, oldResource:MMNetworkResource, error: Error?) -> MMNetworkResource {
         var newResource = oldResource
         newResource.rawData = data
-        if oldResource.type == .image, let unwrappedData = data {
-           newResource.formattedData = UIImage(data: unwrappedData)
-        }
         newResource.error = error
         return newResource
     }
@@ -153,42 +148,35 @@ extension MMResourceManager:URLSessionDataDelegate {
     }
 }
 
-// MARK: - Network Helper Rules
-public protocol NetworkCallHelper {
-     associatedtype T
-    func execute(completion: T)
-}
-
-extension MMRequest: NetworkCallHelper {
-    public typealias T = MMResponseHandler
-    public func execute(completion: @escaping MMResponseHandler) {
-        MMNetworkManager.shared.perform(Request: self, CompletionHandler: completion)
+// MARK: - Async convenience
+public extension MMRequest {
+    public func execute() async -> (MMResponse, MMRequest) {
+        await MMNetworkManager.shared.perform(Request: self)
     }
 }
 
-extension MMNetworkResource: NetworkCallHelper {
-    public typealias T = ResourceCompletionBlock
-    public func execute(completion: @escaping ResourceCompletionBlock) {
-        MMNetworkManager.shared.getRemoteResource(self, needsProgressReporting: true, completion: completion)
+public extension MMNetworkResource {
+    func execute(operation: ResourceOperationType = .download,
+                 needsProgressReporting: Bool = true) async -> MMNetworkResource {
+        await MMNetworkManager.shared.performResource(self,
+                                                      operation: operation,
+                                                      needsProgressReporting: needsProgressReporting)
     }
-}
-
-public protocol ProgressReportRules {
-    var progress:((_ networkResourceHelper:MMResourceManager, _ progress:CGFloat, _ resource:MMNetworkResource)->Void)? { get }
-    var needsProgressReport: Bool { get set }
 }
 
 // MARK: - UIImage view Extension
+@MainActor
 extension UIImageView {
     public func mm_setImage(from url: URL) {
-        // create a image resource
-        let imageResource = MMNetworkResource(rawData: nil, formattedData: nil, type: .image, url: url, error: nil)
-        imageResource.execute { resultResource in
-            if let imageData = resultResource.formattedData as? UIImage, // Image data
-                url == resultResource.url { // both url remains same
-                DispatchQueue.main.async {
-                    self.image = imageData
-                }
+        // create an image resource
+        let imageResource = MMNetworkResource(rawData: nil, type: .image, url: url, error: nil)
+        Task { @MainActor in
+            let resultResource = await imageResource.execute()
+            if resultResource.type == .image,
+               let data = resultResource.rawData,
+               url == resultResource.url,
+               let image = UIImage(data: data) {
+                self.image = image
             }
         }
     }
