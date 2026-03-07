@@ -68,16 +68,11 @@ public class MMNetworkManager {
     public func performResource(_ resource: MMNetworkResource,
                                 operation: ResourceOperationType,
                                 needsProgressReporting progressReport: Bool) async -> MMNetworkResource {
-        await withCheckedContinuation { continuation in
-            let resourceHelper = MMResourceManager(with: resource,
-                                                   toPerform: operation,
-                                                   enableLogging: enableLogging,
-                                                   needsProgressReport: progressReport)
-            resourceHelper.completionHandler = { resource in
-                continuation.resume(returning: resource)
-            }
-            resourceRequestsQueue.addOperation(resourceHelper)
-        }
+        let resourceHelper = MMResourceManager(with: resource,
+                                               toPerform: operation,
+                                               enableLogging: enableLogging,
+                                               needsProgressReport: progressReport)
+        return await resourceHelper.perform()
     }
     
     public func getSize() {

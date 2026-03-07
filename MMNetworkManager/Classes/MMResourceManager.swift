@@ -34,12 +34,9 @@ public enum ResourceOperationType {
     case download
 }
 
-/** Helper class to retrive resource from network,
-  * Cache resource if already downloaded
-  * retrive resource only if not available in cache
-  * Uses NSCache to store resource in memory, not in disk
-  * Have higher limits in resource counts
- */
+/** Helper class to retrieve resources from the network,
+  * caching them in memory when appropriate.
+  */
 final class MMResourceManager : MMLogOperation {
     
     var needsProgressReport: Bool
@@ -52,24 +49,6 @@ final class MMResourceManager : MMLogOperation {
         self.resourceOperation = operation
         self.needsProgressReport = needsProgressReport
         super.init(with: enableLogging)
-        self.queuePriority = .high
-        self.qualityOfService = .background
-    }
-    
-    // result block
-    var completionHandler: ((MMNetworkResource) -> Void)?
-    // progress indicator
-    var progress: ((_ networkResourceHelper: MMResourceManager, _ progress: CGFloat, _ resource: MMNetworkResource)->Void)?
-    
-    /// request resource over network
-    ///
-    /// - Parameter URL: URL of the resource resource
-    private func requestNetworkResource() {
-        let session = URLSession(configuration: .ephemeral, delegate: self, delegateQueue: OperationQueue())
-        if enableLogging {
-           print("Resource URL : \(resource.url.absoluteString)")
-        }
-        session.downloadTask(with: resource.url).resume()
     }
     
     public func resultResource(WithData data:Data?, oldResource:MMNetworkResource, error: Error?) -> MMNetworkResource {
@@ -79,72 +58,47 @@ final class MMResourceManager : MMLogOperation {
         return newResource
     }
     
-    // MARK: - Public methods
-    override public func main() {
+    // MARK: - Async API
+    func perform() async -> MMNetworkResource {
         switch resourceOperation {
         case .upload:
-            uploadResource()
+            return await uploadResource()
         case .download:
-            getResource()
+            return await downloadResource()
         }
     }
     
-    private func getResource() {
+    private func downloadResource() async -> MMNetworkResource {
         // get Resource from inMemory cache
         if let data = MMResourceCache.shared.data(for: resource.url.absoluteString) {
             // Resource available in Memory, no need to ask for network Resource
-            completionHandler?(resultResource(WithData: data, oldResource: resource, error: nil))
-        } else {
-            // resource not available inMemory
-            // requaest resource from network, update resource in memory
-            requestNetworkResource()
+            return resultResource(WithData: data, oldResource: resource, error: nil)
+        }
+        
+        let session = URLSession(configuration: .ephemeral)
+        if enableLogging {
+            print("Resource URL : \(resource.url.absoluteString)")
+        }
+        do {
+            let (data, _) = try await session.data(from: resource.url)
+            _ = MMResourceCache.shared.store(data: data, for: resource.url.absoluteString)
+            return resultResource(WithData: data, oldResource: resource, error: nil)
+        } catch {
+            return resultResource(WithData: nil, oldResource: resource, error: error)
         }
     }
     
-    private func uploadResource() {
-        guard let dataToBeUploaded = resource.rawData else { return }
-        let uploadSession = URLSession(configuration: .default, delegate: self, delegateQueue: OperationQueue())
-        uploadSession.uploadTask(with: URLRequest(url: resource.url), from: dataToBeUploaded).resume()
-    }
-}
-
-//MARK: - Data Download Task Process Delegate
-extension MMResourceManager:URLSessionDownloadDelegate {
-    public func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-        if needsProgressReport {
-            let percentage = CGFloat(bytesWritten/totalBytesExpectedToWrite)
-            progress?(self,percentage,resource)
+    private func uploadResource() async -> MMNetworkResource {
+        guard let dataToBeUploaded = resource.rawData else {
+            return resultResource(WithData: nil, oldResource: resource, error: nil)
         }
-    }
-    
-    public func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
-            do {
-                let resourceData = try Data(contentsOf: location)
-                // store it in cache
-                _ = MMResourceCache.shared.store(data: resourceData, for: resource.url.absoluteString)
-                completionHandler?(resultResource(WithData: resourceData, oldResource: resource, error: nil))
-            } catch let error {
-                completionHandler?(resultResource(WithData: nil, oldResource: resource, error: error))
-            }
-    }
-}
-
-//MARK: - Data Upload Task process delegate
-extension MMResourceManager:URLSessionDataDelegate {
-    public func urlSession(_ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
-        if needsProgressReport {
-            let percentage = CGFloat(bytesSent/totalBytesExpectedToSend)
-            progress?(self,percentage,resource)
+        let session = URLSession(configuration: .default)
+        do {
+            _ = try await session.upload(for: URLRequest(url: resource.url), from: dataToBeUploaded)
+            return resultResource(WithData: nil, oldResource: resource, error: nil)
+        } catch {
+            return resultResource(WithData: nil, oldResource: resource, error: error)
         }
-    }
-    
-    public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-        debugPrint("Completed test : \(String(describing: error))")
-        completionHandler?(resultResource(WithData: nil, oldResource: resource, error: error))
-    }
-    
-    public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
-        debugPrint("upload status : \(String(describing: response.url))")
     }
 }
 
