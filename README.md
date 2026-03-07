@@ -31,8 +31,25 @@
 
 ## Installation
 
-MMNetworkManager is available through [CocoaPods](https://cocoapods.org). To install
-it, simply add the following line to your Podfile:
+### Swift Package Manager
+
+Add MMNetworkManager to your project in Xcode via **File → Add Package Dependencies** and enter:
+
+```
+https://github.com/MuthurajMuthulingam/MMNetworkManager.git
+```
+
+Or add this to your `Package.swift`:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/MuthurajMuthulingam/MMNetworkManager.git", from: "0.0.3")
+]
+```
+
+### CocoaPods
+
+MMNetworkManager is also available through [CocoaPods](https://cocoapods.org). Add the following to your Podfile:
 
 ```ruby
 pod 'MMNetworkManager'
