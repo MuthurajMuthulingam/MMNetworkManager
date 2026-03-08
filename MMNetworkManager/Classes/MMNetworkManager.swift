@@ -8,7 +8,7 @@
 
 import UIKit
 
-public typealias NetworkStatusBlock = (_ NetworkManager: MMNetworkManager, _ isNetworkReachable: Bool) async -> Void
+public typealias NetworkStatusBlock = (_ networkManager: MMNetworkManager, _ isNetworkReachable: Bool) async -> Void
 
 @MainActor
 public class MMNetworkManager {
@@ -84,9 +84,13 @@ public class MMNetworkManager {
     public func networkStatusSequence() -> AsyncStream<Bool> {
         let id = UUID()
         return AsyncStream { continuation in
-            networkStatusContinuations[id] = continuation
+            Task { @MainActor [weak self] in
+                self?.networkStatusContinuations[id] = continuation
+            }
             continuation.onTermination = { [weak self] _ in
-                self?.networkStatusContinuations.removeValue(forKey: id)
+                Task { @MainActor in
+                    self?.networkStatusContinuations.removeValue(forKey: id)
+                }
             }
         }
     }
@@ -136,3 +140,4 @@ extension MMNetworkManager {
         }
     }
 }
+
