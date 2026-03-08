@@ -20,8 +20,10 @@ class ViewController: UIViewController {
         // reachablity  check
         debugPrint("Network Status : \(MMNetworkManager.shared.isNetworkReachable)")
         MMNetworkManager.shared.startNetworkStatusMonitoring()
-        MMNetworkManager.shared.networkStatusChanged = {(networkmanager, isConnect) in
-            debugPrint("Status Change :\(isConnect)")
+        Task {
+            for await isConnect in MMNetworkManager.shared.networkStatusSequence() {
+                debugPrint("Status Change :\(isConnect)")
+            }
         }
         loadDataFromServer()
     }
@@ -34,7 +36,8 @@ class ViewController: UIViewController {
     private func loadDataFromServer() {
         guard let url = URL(string: kURLString) else { return }
         let request = MMRequest(from: url, params: nil, method: .get, responseType: .json, timeout: 30, headers: nil)
-        MMNetworkManager.shared.perform(Request: request) { response, request in
+        Task {
+            let (response, _) = await request.execute()
             debugPrint("URL Response : \(response) and Error : \(String(describing: response.error))")
         }
     }

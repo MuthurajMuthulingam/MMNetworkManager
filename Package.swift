@@ -1,10 +1,10 @@
-// swift-tools-version:5.0
+// swift-tools-version:5.9
 import PackageDescription
 
 let package = Package(
     name: "MMNetworkManager",
     platforms: [
-        .iOS(.v9)
+        .iOS(.v17)
     ],
     products: [
         .library(
@@ -17,6 +17,5 @@ let package = Package(
             name: "MMNetworkManager",
             path: "MMNetworkManager/Classes"
         ),
-    ],
-    swiftLanguageVersions: [.v4, .v4_2, .v5]
+    ]
 )

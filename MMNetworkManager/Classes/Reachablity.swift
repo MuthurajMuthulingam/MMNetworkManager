@@ -17,7 +17,7 @@ public protocol MMReachablityRules {
 }
 
 // credit to Stack Overflow
-public class MMReachability  {
+public class MMReachability {
     var hostname: String?
     var isRunning = false
     var isReachableOnWWAN: Bool
